@@ -176,6 +176,27 @@ namespace paint
 			return (image_ptr_ ? image_ptr_->open(data, bytes) : false);
 		}
 
+		bool image::open(unsigned icon_group_id)
+		{
+#if defined(NANA_WINDOWS)
+			auto res = ::FindResourceW(nullptr, MAKEINTRESOURCE(icon_group_id), RT_GROUP_ICON);
+			auto mem = ::LoadResource(nullptr, res);
+			auto data = ::LockResource(mem);
+
+			auto id = ::LookupIconIdFromDirectory(reinterpret_cast<PBYTE>(data), TRUE);
+			res = ::FindResourceW(nullptr, MAKEINTRESOURCE(id), RT_ICON);
+			mem = ::LoadResource(nullptr, res);
+			data = ::LockResource(mem);
+			auto bytes = ::SizeofResource(nullptr, res);
+
+			char buf[8] = "MZ";
+			image_ptr_ = create_image(buf, sizeof(buf));
+			return (image_ptr_ ? image_ptr_->open(data, bytes) : false);
+#else
+			return false;
+#endif
+		}
+
 
 		bool image::empty() const noexcept
 		{

@@ -42,6 +42,7 @@ namespace paint
 		
 		/// Opens an icon from a specified buffer
 		bool open(const void* data, std::size_t bytes);
+		bool open(unsigned icon_group_id);///< Opens an icon from resources by icon_group_id.
 		bool empty() const noexcept;
 		operator unspecified_bool_t() const;
 		void close() noexcept;
