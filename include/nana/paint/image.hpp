@@ -33,6 +33,7 @@ namespace paint
 		image(image&&);
 		explicit image(const ::std::string& file);
 		explicit image(const ::std::wstring& file);
+		explicit image(unsigned icon_group_id);
 
 		~image();
 		image& operator=(const image& rhs);

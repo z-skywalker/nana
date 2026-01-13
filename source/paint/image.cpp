@@ -88,6 +88,11 @@ namespace paint
 			open(file);
 		}
 
+		image::image(unsigned icon_group_id)
+		{
+			open(icon_group_id);
+		}
+
 		image::~image()
 		{
 			close();
