@@ -187,6 +187,7 @@ namespace paint
 			auto res = ::FindResourceW(nullptr, MAKEINTRESOURCE(icon_group_id), RT_GROUP_ICON);
 			auto mem = ::LoadResource(nullptr, res);
 			auto data = ::LockResource(mem);
+			if (!data) return false;
 
 			auto id = ::LookupIconIdFromDirectory(reinterpret_cast<PBYTE>(data), TRUE);
 			res = ::FindResourceW(nullptr, MAKEINTRESOURCE(id), RT_ICON);
