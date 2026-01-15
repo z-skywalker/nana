@@ -138,6 +138,7 @@ namespace nana
 
 		void separate();                      ///< Adds a separator.
 		drawerbase::toolbar::item_proxy append(const ::std::string& text, const nana::paint::image& img);   ///< Adds a control button.
+		drawerbase::toolbar::item_proxy append(const ::std::wstring& text, const nana::paint::image& img);
 		drawerbase::toolbar::item_proxy append(const ::std::string& text);   ///< Adds a control button.
 		void clear();   ///< Removes all control buttons and separators.
 		

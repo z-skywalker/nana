@@ -556,6 +556,11 @@ namespace nana
 			return {this, get_drawer_trigger().items().size() - 1u};
 		}
 
+		drawerbase::toolbar::item_proxy toolbar::append(const::std::wstring& text, const nana::paint::image& img)
+		{
+			return append(to_utf8(text), img);
+		}
+
 		drawerbase::toolbar::item_proxy toolbar::append(const std::string& text)
 		{
 			get_drawer_trigger().items().push_back(text, {});
