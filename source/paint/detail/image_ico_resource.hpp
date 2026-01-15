@@ -45,7 +45,7 @@ namespace nana{	namespace paint
 			bool open(const void* data, std::size_t bytes) override
 			{
 #if defined(NANA_WINDOWS)
-				native_handle_ = ::CreateIconFromResource(reinterpret_cast<PBYTE>(const_cast<void*>(data)), static_cast<DWORD>(bytes), TRUE, 0x00030000);
+				native_handle_ = ::CreateIconFromResourceEx(reinterpret_cast<PBYTE>(const_cast<void*>(data)), static_cast<DWORD>(bytes), TRUE, 0x00030000, 0, 0, LR_DEFAULTCOLOR);
 				return (nullptr != native_handle_);
 #else
 				return false;

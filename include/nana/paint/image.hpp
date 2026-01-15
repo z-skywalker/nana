@@ -33,7 +33,7 @@ namespace paint
 		image(image&&);
 		explicit image(const ::std::string& file);
 		explicit image(const ::std::wstring& file);
-		explicit image(unsigned icon_group_id);
+		explicit image(unsigned icon_group_id, int cx = 0, int cy = 0);
 
 		~image();
 		image& operator=(const image& rhs);
@@ -43,7 +43,7 @@ namespace paint
 		
 		/// Opens an icon from a specified buffer
 		bool open(const void* data, std::size_t bytes);
-		bool open(unsigned icon_group_id);///< Opens an icon from resources by icon_group_id.
+		bool open(unsigned icon_group_id, int cx = 0, int cy = 0);///< Opens an icon from resources by icon_group_id.
 		bool empty() const noexcept;
 		operator unspecified_bool_t() const;
 		void close() noexcept;

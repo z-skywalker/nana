@@ -88,9 +88,9 @@ namespace paint
 			open(file);
 		}
 
-		image::image(unsigned icon_group_id)
+		image::image(unsigned icon_group_id, int cx, int cy)
 		{
-			open(icon_group_id);
+			open(icon_group_id, cx, cy);
 		}
 
 		image::~image()
@@ -181,7 +181,7 @@ namespace paint
 			return (image_ptr_ ? image_ptr_->open(data, bytes) : false);
 		}
 
-		bool image::open(unsigned icon_group_id)
+		bool image::open(unsigned icon_group_id, int cx, int cy)
 		{
 #if defined(NANA_WINDOWS)
 			auto res = ::FindResourceW(nullptr, MAKEINTRESOURCE(icon_group_id), RT_GROUP_ICON);
@@ -189,7 +189,7 @@ namespace paint
 			auto data = ::LockResource(mem);
 			if (!data) return false;
 
-			auto id = ::LookupIconIdFromDirectory(reinterpret_cast<PBYTE>(data), TRUE);
+			auto id = ::LookupIconIdFromDirectoryEx(reinterpret_cast<PBYTE>(data), TRUE, cx, cy, LR_DEFAULTCOLOR);
 			res = ::FindResourceW(nullptr, MAKEINTRESOURCE(id), RT_ICON);
 			mem = ::LoadResource(nullptr, res);
 			data = ::LockResource(mem);
