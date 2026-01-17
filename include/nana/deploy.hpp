@@ -68,6 +68,7 @@ namespace nana
 
 #ifdef _nana_std_has_string_view
 	std::string to_utf8(std::wstring_view sv);
+	std::string to_utf8_with_check(std::string str);
 	std::wstring to_wstring(std::string_view utf8_str);
 #else
 	std::string to_utf8(const std::wstring&);

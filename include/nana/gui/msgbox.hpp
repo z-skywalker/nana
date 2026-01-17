@@ -45,9 +45,11 @@ namespace nana
 
 		/// Constructor that creates a message box with a specified title and default button.
 		msgbox(const ::std::string&);
+		msgbox(const ::std::wstring&);
 
 		/// Constructor that creates a message box with an owner window, a specified title and buttons.
 		msgbox(window, const ::std::string&, button_t = ok);
+		msgbox(window, const ::std::wstring&, button_t = ok);
 
 		/// Sets an icon for informing user.
 		msgbox& icon(icon_t);

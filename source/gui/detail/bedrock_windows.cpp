@@ -440,7 +440,7 @@ namespace detail
         {
 			(msgbox(condition_wd, "An uncaptured std::exception during message pumping: ").icon(msgbox::icon_information)
 								<< "\n   in form: " << API::window_caption(condition_wd)
-								<<"\n   exception : "<< e.what()
+								<<"\n   exception : "<< to_utf8_with_check(e.what())
 			).show();
 
 			internal_scope_guard lock;

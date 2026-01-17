@@ -181,6 +181,11 @@ namespace nana
 		return ::nana::charset(std::wstring{text}).to_bytes(::nana::unicode::utf8);
 	}
 
+	std::string to_utf8_with_check(std::string str)
+	{
+		return is_utf8(str) ? str : recode_to_utf8(std::move(str));
+	}
+
 	std::wstring to_wstring(std::string_view utf8_str)
 	{
 		if (utf8_str.empty())

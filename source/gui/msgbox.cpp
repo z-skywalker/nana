@@ -367,10 +367,20 @@ namespace nana
 		review_utf8(title_);
 	}
 
+	msgbox::msgbox(const::std::wstring& title)
+		: msgbox(to_utf8(title))
+	{
+	}
+
 	msgbox::msgbox(window wd, const std::string& title, button_t b)
 		: wd_(wd), title_(title), button_(b), icon_(icon_none)
 	{
 		review_utf8(title_);
+	}
+
+	msgbox::msgbox(window wd, const::std::wstring& title, button_t b)
+		: msgbox(wd, to_utf8(title), b)
+	{
 	}
 
 	msgbox& msgbox::icon(icon_t ic)
