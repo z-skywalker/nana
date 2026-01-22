@@ -91,6 +91,7 @@ namespace threads
 		void signal(); ///< Make a signal that will be triggered when the tasks which are pushed before it are finished.
 		void wait_for_signal();     ///< Waits for a signal until the signal processed.
 		void wait_for_finished();
+        bool empty();    ///< Determines whether there is no task in the pool.
 	private:
 		void _m_push(task* task_ptr);
 	private:

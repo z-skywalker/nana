@@ -203,6 +203,17 @@ namespace threads
 					nana::system::sleep(100);
 				}
 			}
+
+			bool empty()
+			{
+				std::lock_guard<decltype(mutex_)> lock(mutex_);
+				if (!container_.tasks.empty()) return false;
+				for(auto thr : container_.threads)
+					if(state::run == thr->thr_state)
+						return false;
+				return true;
+            }
+
 		private:
 			pool_throbj* _m_pick_up_an_idle()
 			{
@@ -408,6 +419,11 @@ namespace threads
 		void pool::wait_for_finished()
 		{
 			impl_->wait_for_finished();
+		}
+
+		bool pool::empty()
+		{
+			return impl_->empty();
 		}
 
 		void pool::_m_push(task* task_ptr)
