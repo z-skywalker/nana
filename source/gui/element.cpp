@@ -521,7 +521,7 @@ namespace nana
 
 				left_mid.y++;
 				right_mid.y++;
-				graph.palette(false, bgcolor.blend(colors::black, 0.1));
+				graph.palette(false, bgcolor.blend(colors::white, 0.2));
 				graph.line(left_mid, left_bottom);
 				graph.line(right_mid, right_bottom);
 
