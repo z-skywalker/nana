@@ -111,7 +111,7 @@ namespace nana
 
 					size extension() const override
 					{
-						return{ 19, 4 };
+						return{ 24, 4 };
 					}
 				private:
 					drawer_impl* const drw_;
@@ -500,9 +500,9 @@ namespace nana
 				void _m_draw_push_button(bool enabled)
 				{
 					::nana::rectangle r{graph_->size()};
-					r.x = r.right() - 16;
+					r.x = r.right() - 21;
 					r.y = 1;
-					r.width = 16;
+					r.width = 21;
 					r.height -= 2;
 
 					auto estate = state_.button_state;
@@ -515,15 +515,15 @@ namespace nana
 						estate = element_state::disabled;
 
 					facade<element::button> button;
-					button.draw(*graph_, ::nana::color{ 3, 65, 140 }, colors::white, r, estate);
+					button.draw(*graph_, ::nana::color{ 254, 243, 218 }, colors::black, r, estate);
 
 					facade<element::arrow> arrow;// ("solid_triangle");
 					arrow.direction(::nana::direction::south);
 
-					r.x += 4;
+					r.x += 7;
 					r.y += (r.height / 2) - 7;
 					r.width = r.height = 16;
-					arrow.draw(*graph_, {}, colors::white, r, element_state::normal);
+					arrow.draw(*graph_, {}, colors::black, r, element_state::normal);
 				}
 
 				void _m_draw_image()
