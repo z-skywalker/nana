@@ -111,7 +111,7 @@ namespace nana
 
 					size extension() const override
 					{
-						return{ 24, 4 };
+						return{ 23, 4 };
 					}
 				private:
 					drawer_impl* const drw_;
