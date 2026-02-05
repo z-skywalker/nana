@@ -722,8 +722,6 @@ namespace nana
 				{
 					if(drawer_->has_lister())
 						drawer_->scroll_items(arg.upwards);
-					else
-						drawer_->move_items(arg.upwards, false);
 				}
 			}
 
