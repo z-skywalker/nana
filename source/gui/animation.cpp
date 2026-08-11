@@ -1,6 +1,6 @@
 /*
  *	An Animation Implementation
- *	Nana C++ Library(http://www.nanapro.org)
+ *	Nana C++ Library(https://nana.acemind.cn)
  *	Copyright(C) 2003-2020 Jinhao(cnjinhao@hotmail.com)
  *
  *	Distributed under the Boost Software License, Version 1.0.
@@ -22,15 +22,9 @@
 #include <algorithm>
 #include <atomic>
 
-#if defined(STD_THREAD_NOT_SUPPORTED)
-    #include <nana/std_thread.hpp>
-    #include <nana/std_mutex.hpp>
-    #include <nana/std_condition_variable.hpp>
-#else
-    #include <mutex>
-    #include <condition_variable>
-    #include <thread>
-#endif // STD_THREAD_NOT_SUPPORTED
+#include <thread>
+#include <mutex>
+#include <condition_variable>
 
 namespace nana
 {
@@ -57,18 +51,19 @@ namespace nana
 	{
 		enum class kind
 		{
-			oneshot,
+			image,
 			framebuilder
 		};
 
-		frame(paint::image img)
-			: type(kind::oneshot)
+		frame(paint::image img, std::size_t duration):
+			duration(duration),
+			type(kind::image)
 		{
-			u.oneshot = new paint::image(std::move(img));
+			u.image = new paint::image(std::move(img));
 		}
 
-		frame(std::function<bool(std::size_t, paint::graphics&, nana::size&)> frbuilder, std::size_t length)
-			: type(kind::framebuilder)
+		frame(std::function<bool(std::size_t, paint::graphics&, nana::size&)> frbuilder, std::size_t length):
+			type(kind::framebuilder)
 		{
 			u.frbuilder = new framebuilder(std::move(frbuilder), length);
 		}
@@ -78,8 +73,8 @@ namespace nana
 		{
 			switch(type)
 			{
-			case kind::oneshot:
-				u.oneshot = new paint::image(*r.u.oneshot);
+			case kind::image:
+				u.image = new paint::image(*r.u.image);
 				break;
 			case kind::framebuilder:
 				u.frbuilder = new framebuilder(*r.u.frbuilder);
@@ -91,15 +86,15 @@ namespace nana
 			: type(r.type)
 		{
 			u = r.u;
-			r.u.oneshot = nullptr;
+			r.u.image = nullptr;
 		}
 
 		~frame()
 		{
 			switch(type)
 			{
-			case kind::oneshot:
-				delete u.oneshot;
+			case kind::image:
+				delete u.image;
 				break;
 			case kind::framebuilder:
 				delete u.frbuilder;
@@ -113,8 +108,8 @@ namespace nana
 			{
 				switch(type)
 				{
-				case kind::oneshot:
-					delete u.oneshot;
+				case kind::image:
+					delete u.image;
 					break;
 				case kind::framebuilder:
 					delete u.frbuilder;
@@ -124,8 +119,8 @@ namespace nana
 				type = r.type;
 				switch(type)
 				{
-				case kind::oneshot:
-					u.oneshot = new paint::image(*r.u.oneshot);
+				case kind::image:
+					u.image = new paint::image(*r.u.image);
 					break;
 				case kind::framebuilder:
 					u.frbuilder = new framebuilder(*r.u.frbuilder);
@@ -141,8 +136,8 @@ namespace nana
 			{
 				switch(type)
 				{
-				case kind::oneshot:
-					delete u.oneshot;
+				case kind::image:
+					delete u.image;
 					break;
 				case kind::framebuilder:
 					delete u.frbuilder;
@@ -151,7 +146,7 @@ namespace nana
 
 				type = r.type;
 				u = r.u;
-				r.u.oneshot = nullptr;
+				r.u.image = nullptr;
 			}
 			return *this;
 		}
@@ -160,7 +155,7 @@ namespace nana
 		{
 			switch(type)
 			{
-			case kind::oneshot:
+			case kind::image:
 				return 1;
 			case kind::framebuilder:
 				return u.frbuilder->length;
@@ -169,10 +164,11 @@ namespace nana
 		}
 
 		//
+		std::size_t duration{0};
 		kind type;
 		union uframes
 		{
-			paint::image * oneshot;
+			paint::image * image;
 			framebuilder * frbuilder;
 		}u;
 	};
@@ -191,23 +187,25 @@ namespace nana
 				:	this_frame(frames.end())
 			{}
 
-			//Render A frame on the set of windows.
-			void render_this(std::map<window, output_t>& outs, paint::graphics& framegraph, nana::size& framegraph_dimension) const
+			//Renders a frame on the set of windows.
+			std::size_t render_this(std::map<window, output_t>& outs, paint::graphics& framegraph, nana::size& framegraph_dimension) const
 			{
 				if(this_frame == frames.end())
-					return;
+					return 0;
 
 				frame & frmobj = *this_frame;
 				switch(frmobj.type)
 				{
-				case frame::kind::oneshot:
-					_m_render(outs, frmobj.u.oneshot->size(), [&frmobj](paint::graphics& tar, const nana::rectangle& area)
+				case frame::kind::image:
+					_m_render(outs, frmobj.u.image->size(), [&frmobj](paint::graphics& tar, const nana::rectangle& area)
 					{
-						if(frmobj.u.oneshot->size() == area.dimension())
-							frmobj.u.oneshot->paste(tar, area.position());
+						if(frmobj.u.image->size() == area.dimension())
+							frmobj.u.image->paste(tar, area.position());
 						else
-							frmobj.u.oneshot->stretch(rectangle{frmobj.u.oneshot->size()}, tar, area);
+							frmobj.u.image->stretch(rectangle{frmobj.u.image->size()}, tar, area);
 					});
+					if(0 == frmobj.duration)
+						return frmobj.u.image->frame_duration();
 					break;
 				case frame::kind::framebuilder:
 					good_frame_by_frmbuilder = frmobj.u.frbuilder->frbuilder(pos_in_this_frame, framegraph, framegraph_dimension);
@@ -223,10 +221,12 @@ namespace nana
 					}
 					break;
 				}
+
+				return frmobj.duration;
 			}
 
 			//Render a frame on a specified window graph. If this frame is created by framebuilder, it doesn't rebuild the frame.
-			void render_this(paint::graphics& graph, const rectangle& area, paint::graphics& framegraph, nana::size& framegraph_dimension) const
+			std::size_t render_this(paint::graphics& graph, const rectangle& area, paint::graphics& framegraph, nana::size& framegraph_dimension) const
 			{
 				// If the frame is EOF, then renders the last frame
 				std::list<nana::frame>::const_iterator pf = this_frame;
@@ -238,17 +238,20 @@ namespace nana
 						std::advance(pf, frames.size() - 1);
 					}
 					else
-						return;
+						return 0;
 				}
 
 				const frame & frmobj = *pf;
 				switch (frmobj.type)
 				{
-				case frame::kind::oneshot:
-					if (frmobj.u.oneshot->size() == area.dimension())
-						frmobj.u.oneshot->paste(graph, area.position());
+				case frame::kind::image:
+					if (frmobj.u.image->size() == area.dimension())
+						frmobj.u.image->paste(graph, area.position());
 					else
-						frmobj.u.oneshot->stretch(rectangle{frmobj.u.oneshot->size()}, graph, area);
+						frmobj.u.image->stretch(rectangle{frmobj.u.image->size()}, graph, area);
+
+					if(0 == frmobj.duration)
+						return frmobj.u.image->frame_duration();
 					break;
 				case frame::kind::framebuilder:
 					if(good_frame_by_frmbuilder)
@@ -260,6 +263,7 @@ namespace nana
 					}
 					break;
 				}
+				return frmobj.duration;
 			}
 
 			nana::size this_frame_size(const nana::size& framegraph_dimension) const
@@ -280,8 +284,8 @@ namespace nana
 				const frame & frmobj = *pf;
 				switch (frmobj.type)
 				{
-				case frame::kind::oneshot:
-					return frmobj.u.oneshot->size();
+				case frame::kind::image:
+					return frmobj.u.image->size();
 				case frame::kind::framebuilder:
 					if (good_frame_by_frmbuilder)
 						return framegraph_dimension;
@@ -304,9 +308,13 @@ namespace nana
 				frame & frmobj = *this_frame;
 				switch(frmobj.type)
 				{
-				case frame::kind::oneshot:
-					++this_frame;
-					pos_in_this_frame = 0;
+				case frame::kind::image:
+					if(!frmobj.u.image->set_frame(++pos_in_this_frame))
+					{
+						++this_frame;
+						pos_in_this_frame = 0;
+						frmobj.u.image->set_frame(0);
+					}
 					break;
 				case frame::kind::framebuilder:
 					if(pos_in_this_frame >= frmobj.u.frbuilder->length)
@@ -336,7 +344,7 @@ namespace nana
 
 				for(auto & tar: outs)
 				{
-					auto graph = API::dev::window_graphics(tar.first);
+					auto graph = api::dev::window_graphics(tar.first);
 					if(nullptr == graph)
 						continue;
 
@@ -349,7 +357,7 @@ namespace nana
 					for(auto& area_fn: tar.second.areas)
 						renderer(*graph, area_fn());
 
-					API::update_window(tar.first);
+					api::update_window(tar.first);
 				}
 			}
 		};//end struct frameset::impl
@@ -358,10 +366,10 @@ namespace nana
 			: impl_(std::make_unique<impl>())
 		{}
 
-		void frameset::push_back(paint::image img)
+		void frameset::push_back(paint::image img, std::size_t duration)
 		{
 			bool located = impl_->this_frame != impl_->frames.end();
-			impl_->frames.emplace_back(std::move(img));
+			impl_->frames.emplace_back(std::move(img), duration);
 			if(false == located)
 				impl_->this_frame = impl_->frames.begin();
 		}
@@ -378,11 +386,17 @@ namespace nana
 		class animation::performance_manager
 		{
 		public:
+			struct control_block
+			{
+				impl* ani;
+				std::size_t duration_left{ 0 };
+			};
+
 			struct thread_variable
 			{
 				std::mutex mutex;
 				std::condition_variable condvar;
-				std::vector<impl*> animations;
+				std::vector<control_block> animations;
 
 				std::size_t active;				//The number of active animations
 				std::shared_ptr<std::thread> thread;
@@ -456,17 +470,21 @@ namespace nana
 			}
 
 			// Renders current frame to a specified graphics
-			void render_this_frame(paint::graphics& graph, const rectangle& area)
+			std::size_t render_this_frame(paint::graphics& graph, const rectangle& area)
 			{
 				if(state.this_frameset != framesets.end())
-					state.this_frameset->impl_->render_this(graph, area, framegraph, framegraph_dimension);
+					return state.this_frameset->impl_->render_this(graph, area, framegraph, framegraph_dimension);
+
+				return 0;
 			}
 
 			// Renders current from to all outputs graphics
-			void render_this_frame()
+			std::size_t render_this_frame()
 			{
 				if(state.this_frameset != framesets.end())
-					state.this_frameset->impl_->render_this(outputs, framegraph, framegraph_dimension);
+					return state.this_frameset->impl_->render_this(outputs, framegraph, framegraph_dimension);
+
+				return 0;
 			}
 
 			nana::size this_frame_size() const
@@ -530,45 +548,59 @@ namespace nana
 						if (thr->animations.empty() || (thr->performance_parameter * (1.0 + 1.0 / thr->animations.size()) <= 43.3))
 						{
 							p->thr_variable = thr;
-							thr->animations.push_back(p);
+							thr->animations.emplace_back(control_block{p});
 							return;
 						}
 					}
 				}
 
 				auto thr = std::make_unique<thread_variable>();
-				thr->animations.push_back(p);
+				thr->animations.emplace_back(control_block{p});
 				thr->performance_parameter = 0.0;
 				thr->fps = p->fps;
 				thr->interval = 1000.0 / double(p->fps);
-				auto pthr = thr.get();
-				thr->thread = std::make_shared<std::thread>([pthr]()
+				thr->thread = std::make_shared<std::thread>([thr = thr.get()]()
 				{
-					auto thr = pthr;
 					nana::system::timepiece tmpiece;
 					tmpiece.start();
 
 					while (true)
 					{
-						thr->active = 0;
+						std::size_t lowest_duration = std::numeric_limits<std::size_t>::max();
 
 						{
 							//acquire the isg lock first to avoid deadlock that occured by an event hander which operates the animation object.
 							nana::internal_scope_guard isglock;
 
 							std::lock_guard<decltype(thr->mutex)> lock(thr->mutex);
-							for (auto ani : thr->animations)
+							thr->active = 0;
+
+							for (auto& cb : thr->animations)
 							{
-								if (ani->paused)
+								if (cb.ani->paused)
 									continue;
 
-								ani->render_this_frame();
+								if(0 == cb.duration_left)
+								{
+									auto dur = cb.ani->render_this_frame();
+									cb.duration_left = dur ? dur : std::size_t(thr->interval);
+								}
+
+
+								if(cb.duration_left < lowest_duration)
+									lowest_duration = cb.duration_left;
+							}
+
+							for(auto & cb : thr->animations)
+							{
+								if(!cb.ani->paused)
+									cb.duration_left -= lowest_duration;
 							}
 						}
 
 						thr->performance_parameter = tmpiece.calc();
-						if (thr->performance_parameter < thr->interval)
-							nana::system::sleep(static_cast<unsigned>(thr->interval - thr->performance_parameter));
+						if (thr->performance_parameter < lowest_duration)
+							std::this_thread::sleep_for(std::chrono::milliseconds{static_cast<int>(lowest_duration - thr->performance_parameter)});
 
 						//Restart timing this frame
 						tmpiece.start();
@@ -576,16 +608,16 @@ namespace nana
 						// Move to next frame
 						{
 							std::lock_guard<decltype(thr->mutex)> lock(thr->mutex);
-							for (auto ani : thr->animations)
+							for (auto & cb : thr->animations)
 							{
-								if (ani->paused)
+								if (cb.ani->paused)
 									continue;
 
-								if (false == ani->next_frame())
+								if (false == cb.ani->next_frame())
 								{
-									if (ani->looped)
+									if (cb.ani->looped)
 									{
-										ani->reset();
+										cb.ani->reset();
 										++thr->active;
 									}
 								}
@@ -645,11 +677,11 @@ namespace nana
 				{
 					// the mutex of thread variable may be acquired by insert()
 					std::lock_guard<decltype(thr->mutex)> privlock(thr->mutex);
-					auto u = std::find(thr->animations.begin(), thr->animations.end(), p);
+					auto u = std::find_if(thr->animations.begin(), thr->animations.end(), [p](const control_block& cb) { return cb.ani == p;  });
 					if (u != thr->animations.end())
 						thr->animations.erase(u);
 				}
-
+				
 				p->thr_variable = nullptr;
 				insert(p);
 			}
@@ -666,7 +698,7 @@ namespace nana
 				{
 					std::lock_guard<decltype(thr->mutex)> privlock(thr->mutex);
 
-					auto u = std::find(thr->animations.begin(), thr->animations.end(), p);
+					auto u = std::find_if(thr->animations.begin(), thr->animations.end(), [p](auto& cb) { return p == cb.ani; });
 					if (u != thr->animations.end())
 						thr->animations.erase(u);
 
@@ -728,19 +760,16 @@ namespace nana
 			if(1 == impl_->framesets.size())
 				impl_->state.this_frameset = impl_->framesets.begin();
 		}
-		/*
-		void branch(const std::string& name, const frameset& frms)
-		{
-			impl_->branches[name].frames = frms;
-		}
 
-		void branch(const std::string& name, const frameset& frms, std::function<std::size_t(const std::string&, std::size_t, std::size_t&)> condition)
+		void animation::push_back(paint::image img, std::size_t duration)
 		{
-			auto & br = impl_->branches[name];
-			br.frames = frms;
-			br.condition = condition;
+			if(img)
+			{
+				frameset fs;
+				fs.push_back(std::move(img), duration);
+				push_back(std::move(fs));
+			}
 		}
-		*/
 
 		void animation::looped(bool enable)
 		{
@@ -789,7 +818,7 @@ namespace nana
 					impl_->render_this_frame(tar, rectangle{ pos, impl_->this_frame_size() });
 				});
 
-				API::events(wd).destroy.connect([this](const arg_destroy& arg){
+				api::events(wd).destroy.connect([this](const arg_destroy& arg){
 					std::lock_guard<decltype(impl_->thr_variable->mutex)> lock(impl_->thr_variable->mutex);
 					impl_->outputs.erase(arg.window_handle);
 				});
@@ -808,7 +837,7 @@ namespace nana
 					impl_->render_this_frame(tar, r());
 				});
 
-				API::events(wd).destroy.connect([this](const arg_destroy& arg){
+				api::events(wd).destroy.connect([this](const arg_destroy& arg){
 					std::lock_guard<decltype(impl_->thr_variable->mutex)> lock(impl_->thr_variable->mutex);
 					impl_->outputs.erase(arg.window_handle);
 				});

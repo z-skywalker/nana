@@ -1,6 +1,6 @@
 /*
  *	A Thread Pool Implementation
- *	Copyright(C) 2003-2018 Jinhao(cnjinhao@hotmail.com)
+ *	Copyright(C) 2003-2020 Jinhao(cnjinhao@hotmail.com)
  *
  *	Distributed under the Boost Software License, Version 1.0.
  *	(See accompanying file LICENSE_1_0.txt or copy at
@@ -16,15 +16,8 @@
 #include <deque>
 #include <vector>
 #include <atomic>
-
-#if defined(STD_THREAD_NOT_SUPPORTED)
-    #include <nana/std_mutex.hpp>
-    #include <nana/std_condition_variable.hpp>
-
-#else
-    #include <condition_variable>
-    #include <mutex>
-#endif
+#include <condition_variable>
+#include <mutex>
 
 #if defined(NANA_WINDOWS)
 	#include <windows.h>
@@ -33,14 +26,11 @@
 	#include <pthread.h>
 #endif
 
-namespace nana
-{
-namespace threads
+namespace nana::threads
 {
 	//class pool
 		//struct task
 			pool::task::task(t k) : kind(k){}
-			pool::task::~task(){}
 		//end struct task
 
 		//struct task_signal
@@ -105,14 +95,13 @@ namespace threads
 				while(true)
 				{
 					bool all_finished = true;
+					
+					for(auto thr: container_.threads)
 					{
-						for(auto thr: container_.threads)
+						if(state::finished != thr->thr_state)
 						{
-							if(state::finished != thr->thr_state)
-							{
-								all_finished = false;
-								break;
-							}
+							all_finished = false;
+							break;
 						}
 					}
 
@@ -127,7 +116,8 @@ namespace threads
 						else
 							break;
 					}
-					nana::system::sleep(100);
+
+					std::this_thread::sleep_for(std::chrono::milliseconds{50});
 				}
 
 				std::vector<pool_throbj*> dup(std::move(container_.threads));
@@ -200,7 +190,7 @@ namespace threads
 								return;
 						}
 					}
-					nana::system::sleep(100);
+					std::this_thread::sleep_for(std::chrono::milliseconds{100});
 				}
 			}
 
@@ -316,7 +306,7 @@ namespace threads
 
 							if(finished)
 								break;
-							nana::system::sleep(100);
+							std::this_thread::sleep_for(std::chrono::milliseconds{100});
 						}
 
 						//wait till the cond is waiting.
@@ -363,17 +353,10 @@ namespace threads
 			}container_;
 		};//end class impl
 
-#ifndef STD_THREAD_NOT_SUPPORTED
 		pool::pool(unsigned thread_number)
 			: impl_(new impl(thread_number ? thread_number : std::thread::hardware_concurrency()))
 		{
 		}
-#else
-		pool::pool(unsigned thread_number)
-			: impl_(new impl(0))
-		{
-		}
-#endif
 
 		pool::pool(pool&& other)
 			: pool()
@@ -431,6 +414,4 @@ namespace threads
 			impl_->push(task_ptr);
 		}
 	//end class pool
-
-}//end namespace threads
-}//end namespace nana
+}//end namespace nana::threads

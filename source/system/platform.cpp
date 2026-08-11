@@ -1,6 +1,6 @@
 /*
  *	A platform API implementation
- *	Copyright(C) 2003-2018 Jinhao(cnjinhao@hotmail.com)
+ *	Copyright(C) 2003-2020 Jinhao(cnjinhao@hotmail.com)
  *
  *	Distributed under the Boost Software License, Version 1.0.
  *	(See accompanying file LICENSE_1_0.txt or copy at
@@ -25,6 +25,7 @@
 	#include <pthread.h>
 	#include <sys/stat.h>
 	#include <spawn.h>
+	#include <errno.h>
 	#include <cstring>
 	#include <memory>
 
@@ -73,26 +74,6 @@ namespace nana
 {
 namespace system
 {
-	//sleep
-	//@brief:	Suspend current thread for a specified milliseconds.
-	//			its precision is depended on hardware.
-	void sleep(unsigned milliseconds)
-	{
-#if defined(NANA_WINDOWS)
-		::Sleep(milliseconds);
-#elif defined(NANA_POSIX)
-		struct timespec timeOut, remains;
-		timeOut.tv_sec = milliseconds / 1000;
-		timeOut.tv_nsec = (milliseconds % 1000) * 1000000;
-		while(-1 == ::nanosleep(&timeOut, &remains))
-		{
-			if(errno == EINTR)
-				timeOut = remains;
-			else
-				break;
-		}
-#endif
-	}
 
 	//this_thread_id
 	//@brief: get the identifier of calling thread.
@@ -123,6 +104,7 @@ namespace system
 	bool get_async_mouse_state(int button)
 	{
 #if defined(NANA_WINDOWS)
+		/// \todo: add to dpi_function GetSystemMetricsForDpi and replace this
 		bool swap = (::GetSystemMetrics(SM_SWAPBUTTON) != 0);
 		switch(button)
 		{

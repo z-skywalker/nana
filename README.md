@@ -1,7 +1,8 @@
 # Nana C++ Library 
 
-[![Licence](https://img.shields.io/badge/license-BSL-blue.svg?style=flat)](LICENSE)
+[![Ubuntu](https://github.com/cnjinhao/nana/actions/workflows/ubuntu.yml/badge.svg)](https://github.com/cnjinhao/nana/actions?query=workflow%3AUbuntu)
 
+[![Licence](https://img.shields.io/badge/license-BSL-blue.svg?style=flat)](LICENSE)
 
 Nana is a C++ standard-like GUI library designed to allow developers to easily create cross-platform GUI applications with modern C++ style. Currently it is regularly tested on Linux(X11) and Windows, and experimentally on macOS and FreeBSD. The [nana repository](https://github.com/cnjinhao/nana) contains the entire source of the library. You can browse the source code and submit your pull request for contributing.
 
@@ -36,7 +37,6 @@ int main()
     nana::exec();
 }
 ```
-
 
 ## Sending a Pull Request ?
 
